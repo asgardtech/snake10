@@ -1,149 +1,19 @@
-You are an autonomous coding agent. Your pull request #10 received review feedback and needs changes.
+You are an autonomous coding agent. Complete the following GitHub issue.
 
-## Original Issue #4: Implement snake movement with keyboard input
+## Repository and branch (mandatory)
+
+- Repository: **asgardtech/snake10**
+- You are on branch **snake10-issue-5** (already created for you). **Do not rename this branch** — downstream automation matches the pull request by this exact branch name.
+- Issue link (for context only): https://github.com/asgardtech/snake10/issues/5
+
+## Pull requests and pushes (automation owns this)
+
+**Do not create a pull request.** Do not run gh pr create (or any command that opens a PR), do not open a PR from the GitHub web UI, and do not use any flow that creates a PR. The LACC workflow will push your branch and open the PR against the default branch after you finish.
+
+**Do not push to the remote named origin** unless a tool you use requires it — the workflow performs a force-push of this branch when publishing. If you do push, still do not create a PR.
+
+Do NOT include "Closes #" or "Fixes #" in commit messages — the issue lives on a separate project board.
+
+## Issue: Implement food spawning and collision detection
 
 (no description)
-
-## Review Feedback
-
-**viovanov:**
-# PR Review: Implement snake movement with keyboard input (#10)
-
-## Overall Assessment
-The implementation of snake movement with keyboard input is **functionally correct**. The GameEngine, useInputHandler, and useGameLoop work properly to enable keyboard-controlled snake movement with appropriate direction buffering to prevent self-collision. However, this PR introduces **significant test quality degradation** that must be addressed.
-
-## Implementation Review ✅
-
-### GameEngine.ts (Movement & Food Logic)
-- ✅ Direction buffering correctly prevents opposite direction inputs (e.g., can't turn left while moving right)
-- ✅ Snake movement calculation is accurate (4-directional movement with proper boundary checking)
-- ✅ Food consumption logic is correct:
-  - Head position collision with food is properly detected
-  - Score increments on consumption
-  - Snake grows (new head added without tail removal)
-  - New food spawns at valid positions (never on snake segments)
-- ✅ Self-collision detection works correctly
-- ✅ Game state transitions (idle → playing → gameOver) function properly
-
-### useInputHandler.ts (Keyboard Input)
-- ✅ Captures both arrow keys (ArrowUp/Down/Left/Right) and WASD controls
-- ✅ Input buffering allows direction changes to queue correctly
-- ✅ Prevents default browser behavior for arrow keys (no scrolling)
-- ✅ Maintains last direction state for consistency
-
-### useGameLoop.ts (Game Loop)
-- ✅ Uses requestAnimationFrame with fixed timestep implementation
-- ✅ Properly accumulates delta time to ensure consistent update frequency
-- ✅ Separation of update and render logic is clean
-
-## Test Quality Issues ❌
-
-**Critical Problem**: This PR replaces comprehensive, deterministic tests with tests that have **false-positive vulnerabilities**.
-
-### Specific Issues
-
-1. **"should grow snake when head reaches food position"** (line 165)
-   ```typescript
-   engine.setDirection('right');
-   for (let i = 0; i < 100; i++) {
-     engine.update();
-     if (engine.getSnake().length > initialLength) break;
-   }
-   expect(engine.getSnake().length).toBeGreaterThanOrEqual(initialLength);
-   ```
-   **Problem**: This test will pass even if the snake **never eats food**. Moving only right for 100 iterations may not reach the randomly-placed food. The `>=` assertion passes whether food was consumed or not. ⚠️ False positive risk.
-
-2. **"should increment score when eating food"** (line 175)
-   ```typescript
-   engine.setDirection('right');
-   for (let i = 0; i < 100; i++) {
-     engine.update();
-     if (engine.getScore() > initialScore) break;
-   }
-   expect(engine.getScore()).toBeGreaterThanOrEqual(initialScore);
-   ```
-   **Problem**: Same issue—if the snake never reaches food, score stays at `initialScore`, and `initialScore >= initialScore` is true. The test doesn't validate that food consumption actually increments the score. ⚠️ False positive risk.
-
-3. **"should spawn food at valid position"** (line 154)
-   - This is a NEW test that doesn't validate food consumption at all, only food boundary validation
-   - Doesn't replace the removed food-consumption test; adds an unrelated test instead
-
-4. **Removed: "should spawn new food after consuming"**
-   - This test verified that after consuming food, the new food spawns at a position not occupied by the snake
-   - Valuable integration test that is now gone
-   - Current implementation is correct, but losing this test removes coverage
-
-### Comparison to Original Tests
-
-The original tests (still in main branch) were deterministic:
-- They navigated the snake to food by iteratively moving in calculated directions
-- They asserted exact values (`toHaveLength(initialLength + 1)` and `toBe(initialScore + 1)`)
-- They verified complete food consumption cycles
-
-While those tests had some brittleness with random food placement, the solution is to **improve them** (e.g., spawn food at a known location in beforeEach), not to **weaken them**.
-
-## Recommendations
-
-**Reject this PR as-is.** Please make one of these changes:
-
-### Option A: Keep Detailed Tests (Preferred)
-Restore the original comprehensive tests and improve them by controlling food placement:
-- Add a helper method to set food at a specific location
-- Or mock Math.random() for deterministic food spawning
-- This preserves strong validation while removing brittleness
-
-### Option B: Improve Current Tests
-If keeping the simplified approach, fix false-positive vulnerabilities:
-```typescript
-it('should grow snake when head reaches food position', () => {
-  const food = engine.getFood()!;
-  const initialLength = engine.getSnake().length;
-  // Ensure food is reachable by moving in one direction only
-  // or set food location deterministically
-  // Assert exact value, not >=
-  expect(engine.getSnake().length).toBe(initialLength + 1);
-});
-```
-
-## Summary
-- ✅ Implementation: Correct and properly addresses the issue
-- ❌ Tests: Regression with false-positive vulnerabilities that mask potential bugs
-- 🔴 **Blocking**: Cannot merge without test improvements
-
-The feature implementation does what it's supposed to do, but the new test suite cannot reliably verify that.
-
----
-
-**viovanov:**
-## Automated Code Review
-
-## Review Complete
-
-I've analyzed PR #10 and posted a detailed review. Here's my assessment:
-
-**Implementation Quality: ✅ Excellent**
-- The snake movement with keyboard input is properly implemented
-- Direction buffering correctly prevents self-collision
-- Food consumption, growth, and scoring logic all work correctly
-- Input handling supports both arrow keys and WASD
-- Game loop is well-structured with proper timestep management
-
-**Test Quality: ❌ Significant Regression**
-The PR replaces comprehensive, deterministic tests with weaker ones that have **false-positive vulnerabilities**:
-- New tests can pass even if the snake never eats food
-- Assertions use `>=` instead of exact values
-- An important test for new food spawning is removed entirely
-- The new tests don't properly validate the core feature
-
-The core issue is that tests like `expect(length).toBeGreaterThanOrEqual(initialLength)` will pass whether the snake ate food or not, defeating the purpose of the test.
-
-**Recommendation**: The feature is implemented correctly, but the tests need to be improved. Either restore the original detailed tests (with better handling of random food placement) or fix the current tests to use exact assertions and deterministic food locations.
-
-VERDICT: CHANGES_REQUESTED
-
-Instructions:
-1. Read the review feedback above carefully.
-2. Address each piece of feedback by modifying the code.
-3. Commit your changes with a clear message referencing the feedback.
-4. Do NOT create a new PR -- your commits will be pushed to the existing branch.
-5. Do NOT include "Closes #" or "Fixes #" in commit messages — the issue lives on a separate project board.
