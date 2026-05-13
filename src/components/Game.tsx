@@ -128,10 +128,13 @@ export function Game() {
   };
 
   const toggleGame = () => {
+    if (!engineRef.current) return;
     if (isRunning) {
+      engineRef.current.pause();
       stop();
       setIsRunning(false);
     } else {
+      engineRef.current.resume();
       setIsRunning(true);
     }
   };

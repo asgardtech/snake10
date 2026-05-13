@@ -44,6 +44,38 @@ describe('GameEngine', () => {
       expect(engine.isPlaying()).toBe(true);
       expect(engine.isGameOver()).toBe(false);
     });
+
+    it('should pause game when pause is called', () => {
+      engine.start();
+      expect(engine.isPlaying()).toBe(true);
+      engine.pause();
+      expect(engine.isPlaying()).toBe(false);
+      expect(engine.getGameState()).toBe('idle');
+    });
+
+    it('should resume game when resume is called', () => {
+      engine.start();
+      engine.pause();
+      engine.resume();
+      expect(engine.isPlaying()).toBe(true);
+      expect(engine.getGameState()).toBe('playing');
+    });
+
+    it('should preserve game state when pausing', () => {
+      engine.start();
+      engine.setDirection('up');
+      for (let i = 0; i < 3; i++) {
+        engine.update();
+      }
+      const snakeBeforePause = engine.getSnake();
+      const scoreBeforePause = engine.getScore();
+
+      engine.pause();
+      engine.resume();
+
+      expect(engine.getSnake()).toEqual(snakeBeforePause);
+      expect(engine.getScore()).toBe(scoreBeforePause);
+    });
   });
 
   describe('snake movement', () => {
@@ -64,45 +96,37 @@ describe('GameEngine', () => {
       expect(snake[0]).toEqual({ x: 10, y: 9 });
     });
 
-    it('should wrap around top boundary', () => {
+    it('should end game when hitting top boundary', () => {
       engine.setDirection('up');
       for (let i = 0; i < 11; i++) {
         engine.update();
       }
-      expect(engine.isGameOver()).toBe(false);
-      const snake = engine.getSnake();
-      expect(snake[0].y).toBe(19);
+      expect(engine.isGameOver()).toBe(true);
     });
 
-    it('should wrap around left boundary', () => {
+    it('should end game when hitting left boundary', () => {
       engine.setDirection('up');
       engine.update();
       engine.setDirection('left');
       for (let i = 0; i < 11; i++) {
         engine.update();
       }
-      expect(engine.isGameOver()).toBe(false);
-      const snake = engine.getSnake();
-      expect(snake[0].x).toBe(19);
+      expect(engine.isGameOver()).toBe(true);
     });
 
-    it('should wrap around right boundary', () => {
+    it('should end game when hitting right boundary', () => {
       for (let i = 0; i < 11; i++) {
         engine.update();
       }
-      expect(engine.isGameOver()).toBe(false);
-      const snake = engine.getSnake();
-      expect(snake[0].x).toBe(1);
+      expect(engine.isGameOver()).toBe(true);
     });
 
-    it('should wrap around bottom boundary', () => {
+    it('should end game when hitting bottom boundary', () => {
       engine.setDirection('down');
       for (let i = 0; i < 11; i++) {
         engine.update();
       }
-      expect(engine.isGameOver()).toBe(false);
-      const snake = engine.getSnake();
-      expect(snake[0].y).toBe(1);
+      expect(engine.isGameOver()).toBe(true);
     });
 
     it('should prevent reversing into itself', () => {
@@ -178,7 +202,7 @@ describe('GameEngine', () => {
         y = engine.getSnake()[0].y;
       }
 
-      expect(engine.getScore()).toBe(initialScore + 10);
+      expect(engine.getScore()).toBe(initialScore + 1);
     });
 
     it('should spawn new food after consuming', () => {

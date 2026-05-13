@@ -44,6 +44,18 @@ export class GameEngine {
     this.gameState = 'playing';
   }
 
+  pause() {
+    if (this.gameState === 'playing') {
+      this.gameState = 'idle';
+    }
+  }
+
+  resume() {
+    if (this.gameState === 'idle') {
+      this.gameState = 'playing';
+    }
+  }
+
   update() {
     if (this.gameState !== 'playing') return;
 
@@ -51,7 +63,7 @@ export class GameEngine {
     const head = this.snake[0];
     const newHead = this.getNextPosition(head, this.direction);
 
-    if (this.isCollision(newHead)) {
+    if (this.isBoundaryCollision(newHead) || this.isCollision(newHead)) {
       this.gameState = 'gameOver';
       return;
     }
@@ -59,7 +71,7 @@ export class GameEngine {
     this.snake.unshift(newHead);
 
     if (this.food && newHead.x === this.food.x && newHead.y === this.food.y) {
-      this.score += 10;
+      this.score += 1;
       this.spawnFood();
     } else {
       this.snake.pop();
@@ -90,11 +102,11 @@ export class GameEngine {
         nextX = pos.x + 1;
         break;
     }
-    // Apply wraparound with modulo arithmetic
-    return {
-      x: ((nextX % this.gridWidth) + this.gridWidth) % this.gridWidth,
-      y: ((nextY % this.gridHeight) + this.gridHeight) % this.gridHeight,
-    };
+    return { x: nextX, y: nextY };
+  }
+
+  private isBoundaryCollision(pos: Position): boolean {
+    return pos.x < 0 || pos.x >= this.gridWidth || pos.y < 0 || pos.y >= this.gridHeight;
   }
 
   private isOppositeDirection(dir1: Direction, dir2: Direction): boolean {
