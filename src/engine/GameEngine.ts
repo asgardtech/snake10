@@ -134,6 +134,15 @@ export class GameEngine {
         return;
       }
     }
+    // Fallback: scan for first available position
+    for (let x = 0; x < this.gridWidth; x++) {
+      for (let y = 0; y < this.gridHeight; y++) {
+        if (!this.snake.some((segment) => segment.x === x && segment.y === y)) {
+          this.food = { x, y };
+          return;
+        }
+      }
+    }
   }
 
   getSnake(): Position[] {
