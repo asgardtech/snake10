@@ -177,7 +177,6 @@ describe('GameEngine', () => {
     });
 
     it('should spawn new food after consuming', () => {
-      const initialFood = engine.getFood();
       engine.setFood({ x: 11, y: 10 });
       const foodBeforeConsume = engine.getFood();
       engine.setDirection('right');

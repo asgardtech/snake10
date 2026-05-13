@@ -6,7 +6,6 @@ import { useInputHandler } from '@/hooks/useInputHandler';
 import { useGameState } from '@/hooks/useGameState';
 import { GameEngine } from '@/engine/GameEngine';
 import { Button } from '@/components/ui/button';
-import { GameState } from '@/types/game';
 import { GAME_UI_TEXT } from '@/constants/ui';
 
 const CANVAS_WIDTH = 400;
@@ -97,7 +96,7 @@ export function Game() {
     }
 
     setScore(engineRef.current.getScore());
-  }, [getAndClearBuffer]);
+  }, [getAndClearBuffer, setGameState]);
 
   useGameLoop({
     canvas: gameState === 'playing' ? canvasRef.current : null,
