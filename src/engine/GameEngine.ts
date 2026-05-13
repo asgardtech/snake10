@@ -122,7 +122,7 @@ export class GameEngine {
     return this.snake.some((segment) => segment.x === pos.x && segment.y === pos.y);
   }
 
-  private spawnFood(): boolean {
+  private spawnFood(): void {
     const maxAttempts = 100;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const newFood: Position = {
@@ -131,10 +131,9 @@ export class GameEngine {
       };
       if (!this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y)) {
         this.food = newFood;
-        return true;
+        return;
       }
     }
-    return false;
   }
 
   getSnake(): Position[] {

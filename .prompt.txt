@@ -1,19 +1,432 @@
-You are an autonomous coding agent. Complete the following GitHub issue.
+You are an autonomous coding agent. Your pull request #11 received review feedback and needs changes.
 
-## Repository and branch (mandatory)
-
-- Repository: **asgardtech/snake10**
-- You are on branch **snake10-issue-5** (already created for you). **Do not rename this branch** — downstream automation matches the pull request by this exact branch name.
-- Issue link (for context only): https://github.com/asgardtech/snake10/issues/5
-
-## Pull requests and pushes (automation owns this)
-
-**Do not create a pull request.** Do not run gh pr create (or any command that opens a PR), do not open a PR from the GitHub web UI, and do not use any flow that creates a PR. The LACC workflow will push your branch and open the PR against the default branch after you finish.
-
-**Do not push to the remote named origin** unless a tool you use requires it — the workflow performs a force-push of this branch when publishing. If you do push, still do not create a PR.
-
-Do NOT include "Closes #" or "Fixes #" in commit messages — the issue lives on a separate project board.
-
-## Issue: Implement food spawning and collision detection
+## Original Issue #5: Implement food spawning and collision detection
 
 (no description)
+
+## Review Feedback
+
+**viovanov:**
+# PR Review: Implement Food Spawning and Collision Detection (#11)
+
+## Summary
+This PR implements food spawning and collision detection for the snake game. The actual implementation is already present on the branch (merged from PR #10) and is functionally sound, though there is one critical issue that needs to be addressed.
+
+## Implementation Analysis
+
+### ✅ What Works Well
+
+**Food Spawning & Collision Detection**
+- Food spawning logic correctly generates random positions that avoid snake segments (GameEngine.ts:125-134)
+- Collision detection properly detects when the snake head reaches food (line 73)
+- Score increments by exactly 1 on consumption (line 74)
+- Snake grows by exactly 1 segment when eating food (head added, tail not removed when food is consumed)
+- New food immediately respawns after consumption (line 75)
+
+**Food Rendering**
+- Food is correctly rendered as a red circle (`#ef4444`) at proper grid coordinates (Game.tsx:61-69)
+- Visual scaling respects the grid size and matches snake rendering scale
+- Rendering updates properly when food is consumed and respawned
+
+**Tests**
+- Tests are comprehensive and properly written with deterministic assertions
+- "should grow snake when head reaches food position" uses `setFood()` for deterministic testing (line 165-168)
+- "should increment score when eating food" properly validates exact score value (line 171-176)
+- "should spawn new food after consuming" validates complete lifecycle with multiple assertions (line 179-195)
+- Tests verify food never spawns on snake segments
+
+**State Persistence**
+- Food position persists correctly during pause/resume (game update doesn't run when paused)
+- Food respawns on game reset via the reset() method
+
+### ⚠️ Critical Issue
+
+**Infinite Loop Risk on Nearly-Full Board**
+
+The `spawnFood()` method (GameEngine.ts:125-134) has **no protection against infinite loops**:
+
+```typescript
+private spawnFood() {
+  let newFood: Position;
+  do {
+    newFood = {
+      x: Math.floor(Math.random() * this.gridWidth),
+      y: Math.floor(Math.random() * this.gridHeight),
+    };
+  } while (this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y));
+  this.food = newFood;
+}
+```
+
+**Scenario**: If the snake grows to occupy 395 of 400 grid cells (on a 20×20 grid), the probability of finding a free cell becomes very low. The do-while loop could run hundreds or thousands of iterations, causing the game thread to freeze.
+
+**Issue #5 Acceptance Criterion**: "Given the snake occupies 395 of 400 grid cells (leaving only 5 free cells), when food is spawned, then a valid position is found within reasonable attempts (no infinite loop)."
+
+**Required Fix**: Add a max-attempts counter with fallback behavior:
+
+```typescript
+private spawnFood() {
+  const maxAttempts = 100;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const newFood: Position = {
+      x: Math.floor(Math.random() * this.gridWidth),
+      y: Math.floor(Math.random() * this.gridHeight),
+    };
+    if (!this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y)) {
+      this.food = newFood;
+      return;
+    }
+  }
+  // Fallback: end game or place food at first available position
+  this.gameState = 'gameOver';
+}
+```
+
+Alternatively, scan for the first available position instead of using random attempts.
+
+### ✅ Acceptance Criteria Status
+
+| Criterion | Status | Notes |
+|-----------|--------|-------|
+| Food placed at valid position on init | ✅ | reset() calls spawnFood() with proper bounds |
+| Food doesn't overlap snake | ✅ | do-while loop checks all segments |
+| Coordinates within [0, 19] for 20×20 | ✅ | Math.floor(Math.random() * gridWidth) is correct |
+| Head collision consumes food | ✅ | Line 73-75 handles this correctly |
+| Body segments don't consume food | ✅ | Only head position is checked against food |
+| Score increments by 1 | ✅ | Line 74: this.score += 1 |
+| Snake length increases by 1 | ✅ | Head added, tail not removed on consumption |
+| New food spawns immediately | ✅ | Line 75: spawnFood() called in same update |
+| No infinite loop on full board | ❌ | **CRITICAL**: No max-attempts counter |
+| Food renders correctly | ✅ | Red circle rendering in Game.tsx works |
+| Food persists during pause | ✅ | Implicit but verified by pause test |
+
+## Verdict
+
+The implementation is **functionally correct** and meets all acceptance criteria **except one**: the critical infinite-loop risk on a nearly-full board. This must be fixed before merging, as it violates both the explicit acceptance criterion and represents a serious UX/stability issue.
+
+The fix is straightforward (add max-attempts counter or search algorithm), and all other aspects of the implementation are well-done and properly tested.
+
+---
+
+**viovanov:**
+## Automated Code Review
+
+## Review Complete
+
+I've analyzed PR #11 and posted a detailed review to the PR. Here's my assessment:
+
+**Implementation Status:**
+- ✅ Food spawning works correctly and avoids snake segments
+- ✅ Collision detection properly handles head-food collision
+- ✅ Score increment and snake growth work as specified
+- ✅ Food rendering is correct (red circles at proper positions)
+- ✅ Tests are comprehensive and properly written
+- ❌ **Critical Issue**: `spawnFood()` method has no protection against infinite loops on a nearly-full board
+
+**The Critical Problem:**
+The `spawnFood()` method uses an infinite do-while loop that can hang if the snake occupies most of the grid (e.g., 395/400 cells). This violates the explicit acceptance criterion: "when the snake occupies 395 of 400 grid cells, then a valid position is found within reasonable attempts (no infinite loop)."
+
+**Required Fix:**
+Add a max-attempts counter with fallback behavior. The fix is straightforward (shown in the review), and everything else is well-implemented.
+
+VERDICT: CHANGES_REQUESTED
+
+---
+
+**viovanov:**
+# PR Review: Implement food spawning and collision detection (#11)
+
+## Overall Assessment
+
+**Status: CHANGES_REQUESTED**
+
+This PR attempts to improve the food spawning logic to prevent infinite loops, which is a valid concern raised in issue #5. However, the implementation has significant issues with its edge-case handling, and the PR description is misleading relative to the actual code changes.
+
+## Detailed Analysis
+
+### What's Already Implemented
+
+The project already has the core food spawning and collision detection features working correctly:
+
+- ✅ **Collision detection** (GameEngine.ts:73): Snake head collision with food is properly detected
+- ✅ **Score increment** (GameEngine.ts:74): Score increases by 1 on food consumption  
+- ✅ **Snake growth** (GameEngine.ts:71): New head is added without removing tail
+- ✅ **Food rendering** (Game.tsx:61-69): Food renders as a red circle at correct position
+- ✅ **Comprehensive tests**: Food consumption tests verify all core mechanics
+- ✅ **Food doesn't spawn on snake**: Current do-while loop already prevents this
+
+### The Proposed Change
+
+The PR modifies `spawnFood()` from:
+```typescript
+// Old: do-while with no iteration limit
+do {
+  newFood = {...};
+} while (this.snake.some(...));
+this.food = newFood;
+```
+
+To:
+```typescript
+// New: for loop with max 100 attempts
+const maxAttempts = 100;
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  const newFood: Position = {...};
+  if (!this.snake.some(...)) {
+    this.food = newFood;
+    return;
+  }
+}
+this.gameState = 'gameOver';  // ⚠️ Questionable fallback
+```
+
+### Problems with This Implementation
+
+#### 1. **Problematic Fallback Behavior** (Critical)
+
+Setting `gameState = 'gameOver'` when no valid position is found after 100 attempts is not specified in the acceptance tests and is overly harsh:
+
+- **When called at initialization** (reset()): The game would end immediately if food can't be spawned on first try — unacceptable
+- **When called after eating food** (update()): Ending the game because new food couldn't be placed after 100 random attempts seems extreme
+- **Edge case survivability**: With a snake occupying 395 of 400 cells (5 free cells), the probability of failing all 100 attempts is ~5%. This is too high for a critical path
+
+**Better alternatives:**
+- Return `false` from spawnFood and leave old food in place
+- Keep attempting across multiple frames
+- Use a more sophisticated placement algorithm
+
+#### 2. **maxAttempts=100 is Arbitrary and Insufficient** (Medium)
+
+For acceptance test #9 ("snake occupies 395 of 400 cells, food is spawned without infinite loop"):
+- With 5 free cells out of 400, P(fail single attempt) = 395/400 = 0.9875
+- P(fail all 100 attempts) ≈ 5% 
+- This is not a reliable solution for an edge case that should be handled gracefully
+
+#### 3. **Missing Test Coverage for Edge Case** (Medium)
+
+Acceptance test #9 specifies: "Given the snake occupies 395 of 400 grid cells... when food is spawned, then a valid position is found within reasonable attempts (no infinite loop)."
+
+- ✗ No test exists for this scenario
+- ✗ No verification that maxAttempts=100 is sufficient
+- ✗ Current tests use `setFood()` to avoid random placement — good for isolation but leaves edge case uncovered
+
+#### 4. **Misleading PR Description** (Minor)
+
+The PR summary claims to implement features in multiple files that don't appear in the diff:
+- References `src/game/food.py`, `src/game/collision.py`, `src/game/snake.py` — these don't exist (project uses TypeScript)
+- Claims test files `tests/test_food_spawn.py`, `tests/test_collision.py` were added — they don't appear in the diff
+- The actual changes are only in `GameEngine.ts` and `.prompt.txt`
+
+This appears to be an auto-generated or copy-pasted template summary rather than an accurate description of this specific PR.
+
+### What's Correct ✅
+
+- The logic correctly prevents food from spawning on any snake segment
+- The change does address the infinite-loop risk mentioned in issue #5
+- All existing tests continue to pass
+- The overall food spawning logic is sound
+
+## Acceptance Test Compliance
+
+| Test | Status | Notes |
+|------|--------|-------|
+| Food at valid position (0-19 for 20×20) | ✅ | Existing tests verify this |
+| No overlap with snake segments | ✅ | Logic is correct |
+| Snake head collision = consumption | ✅ | Collision detection working |
+| Body collision ≠ consumption | ✅ | Only head is checked |
+| Score increments by 1 | ✅ | Verified in tests |
+| Snake length +1 | ✅ | Verified in tests |
+| New food auto-spawns | ✅ | Verified in tests |
+| **Nearly-full board handled** | ❌ | **No test; maxAttempts=100 insufficient** |
+| Food renders as red circle | ✅ | Already implemented |
+| Pause preserves food position | ✅ | Covered by state preservation test |
+
+## Recommendations
+
+**Option A (Preferred): Improve the fallback behavior**
+```typescript
+private spawnFood(): boolean {
+  const maxAttempts = 100;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const newFood: Position = {
+      x: Math.floor(Math.random() * this.gridWidth),
+      y: Math.floor(Math.random() * this.gridHeight),
+    };
+    if (!this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y)) {
+      this.food = newFood;
+      return true;  // Success
+    }
+  }
+  // Keep existing food; don't end the game
+  return false;  // Failure but game continues
+}
+```
+
+Then update the caller in `update()` to handle the return value gracefully.
+
+**Option B: If gameState='gameOver' fallback is intended**
+- Document why this is the correct behavior
+- Add a test verifying this edge case scenario
+- Increase maxAttempts or add a more deterministic algorithm to reduce failure probability
+
+## Summary
+
+The core issue being addressed (infinite loop prevention) is valid, but the implementation needs refinement:
+
+1. The fallback to `gameState = 'gameOver'` is too extreme without strong justification
+2. Edge case handling needs testing to verify maxAttempts=100 is appropriate  
+3. PR description should match actual code changes
+
+The existing collision detection, scoring, growth, and rendering systems all work correctly and don't need changes.
+
+---
+
+**viovanov:**
+## Automated Code Review
+
+## Review Complete
+
+I've completed a thorough review of PR #11 which proposes to improve the food spawning logic by adding a maximum attempt limit to prevent infinite loops.
+
+**Key Findings:**
+
+**✅ What Works:**
+- The collision detection system is already correctly implemented
+- Food consumption, scoring, and snake growth all work properly
+- Food rendering as a red circle is already in place
+- Existing tests comprehensively cover the core mechanics
+
+**❌ Critical Issues:**
+1. **Problematic fallback**: Setting `gameState = 'gameOver'` when food can't be spawned after 100 attempts is too harsh and could end games unexpectedly, especially during initialization
+2. **Insufficient edge case handling**: With a snake occupying 395 of 400 grid cells (5 free cells), there's still a ~5% chance of failure with maxAttempts=100 — unacceptable for a critical path
+3. **Missing test coverage**: No test exists for the nearly-full board scenario mentioned in issue #5's acceptance tests
+4. **Misleading PR description**: Claims implementation across multiple non-existent Python files that don't match the actual TypeScript-only changes
+
+**Recommendation:** The approach of preventing infinite loops is valid, but the implementation needs changes. The gameState fallback should be replaced with a graceful degradation (e.g., return false and keep the existing food) rather than ending the game.
+
+The review has been posted to the PR at: https://github.com/asgardtech/snake10/pull/11#issuecomment-4444667967
+
+VERDICT: CHANGES_REQUESTED
+
+---
+
+**viovanov:**
+# Code Review: PR #11 - Implement Food Spawning and Collision Detection
+
+## Overview
+This PR modifies the `spawnFood()` method in `GameEngine.ts` to return a boolean and use a for-loop with a maximum attempt limit (100) instead of an infinite do-while loop. The PR description indicates this implements food spawning and collision detection for issue #5.
+
+## Scope Analysis
+**Issue #5** requests: "Implement food spawning and collision detection"
+
+However, **these features already exist** in the main branch (from PR #10, which merged the complete GameEngine with:
+- Food spawning logic (lines 125-134 in main)
+- Collision detection (line 73: `if (this.food && newHead.x === this.food.x && newHead.y === this.food.y)`)
+- Score increment, snake growth, and auto-respawn
+
+This PR does NOT implement new features for issue #5, but rather **refactors the existing spawnFood() algorithm**. The PR title should reflect this ("Improve food spawning resilience" or similar).
+
+## Implementation Review
+
+### Positive Changes ✅
+1. **Prevents infinite loops**: The original do-while loop could theoretically hang if the board becomes too full. The 100-attempt limit prevents this edge case.
+2. **Graceful degradation**: The method returns false on failure instead of setting gameState to 'gameOver' (a reasonable choice per commit message).
+3. **Tests pass**: Food spawning, collision detection, score increment, and snake growth are all tested and working.
+4. **Deterministic test approach**: Tests use `setFood()` to control food placement, making them reliable instead of relying on random spawning.
+
+### Critical Issues ❌
+
+#### 1. **Return Value Not Handled by Callers**
+The return type changed from `void` to `boolean`, but callers don't check or handle the return value:
+
+```typescript
+// In reset() - line 40
+this.spawnFood();  // Ignores boolean return
+
+// In update() - line 75
+this.spawnFood();  // Ignores boolean return
+```
+
+If `spawnFood()` returns false (failure to find valid position), the old food remains in place. This could cause:
+- Silent failures during game initialization
+- Same food position after failed respawn attempts
+- Potentially inconsistent game state if the board becomes nearly full
+
+**Recommended fix**: Either:
+- Option A: Handle the failure - check return value and either log warning, retry, or set a fallback position
+- Option B: Revert to void return and accept the limitation that the method might fail silently
+- Option C: Increase maxAttempts or implement a smarter algorithm for edge cases
+
+#### 2. **Edge Case Risk**
+With a 20x20 grid (400 cells), a very long snake could leave few valid food positions. With 300 snake cells, only ~75 cells remain. The probability of all 100 random attempts failing in this scenario is small but non-zero. At 399/400 cells, spawnFood() would always fail.
+
+### Test Quality ✅
+The test suite is comprehensive and well-written:
+- Tests use `setFood()` to control food placement, avoiding brittleness from random spawning
+- Tests verify:
+  - Food spawns at valid positions within bounds
+  - Snake grows when eating (length check)
+  - Score increments correctly
+  - New food spawns after consumption
+  - New food doesn't overlap with snake body
+- All assertions use exact comparisons (not `>=`), providing strong guarantees
+
+## Correctness Against Spec
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Food Spawning | ✅ Implemented | Works correctly; returns valid positions |
+| Collision Detection | ✅ Implemented | Head-to-food collision properly detected |
+| Score Increment | ✅ Implemented | Increments on successful collision |
+| Snake Growth | ✅ Implemented | Adds one segment on food consumption |
+| Auto-Respawn | ✅ Implemented | New food spawns immediately after consumption |
+
+## Summary
+
+**Implementation**: The algorithm improvement is sound and prevents infinite loops. Food spawning and collision detection work correctly.
+
+**Test Quality**: Excellent—comprehensive and deterministic.
+
+**Blocking Issue**: The `spawnFood()` return value is unused by callers, creating incomplete error handling. While unlikely in normal gameplay, callers should either handle the return value or the method should revert to void return type.
+
+## Recommendations
+
+1. **Update callers to handle return value**: Check result in both `reset()` and `update()`, or revert to void return type.
+
+2. **Increase maxAttempts**: For late-game scenarios with very long snakes, 100 attempts may be insufficient. Consider 200+ or adaptive retry logic.
+
+3. **Clarify issue scope**: The PR title claims to "Implement food spawning and collision detection," but these already exist from PR #10. This PR improves existing features.
+
+---
+
+**viovanov:**
+## Automated Code Review
+
+Now I'll provide my verdict:
+
+Based on my thorough review of PR #11, I found that while the implementation is functionally correct and tests pass, there's a critical issue with incomplete error handling.
+
+## Key Findings:
+
+**Strengths:**
+- ✅ Food spawning and collision detection work correctly
+- ✅ Comprehensive, deterministic test suite
+- ✅ Algorithm improvement prevents infinite loops
+
+**Critical Issue:**
+- ❌ The `spawnFood()` method now returns a boolean, but callers ignore the return value
+  - In `reset()` line 40: `this.spawnFood();` ignores result
+  - In `update()` line 75: `this.spawnFood();` ignores result
+- This creates a silent failure mode where failed spawning goes unhandled
+- Violates defensive programming principles
+
+The return type change from `void` to `boolean` indicates this refactoring was incomplete. Either callers should be updated to check the result, or the method should revert to void.
+
+VERDICT: CHANGES_REQUESTED
+
+Instructions:
+1. Read the review feedback above carefully.
+2. Address each piece of feedback by modifying the code.
+3. Commit your changes with a clear message referencing the feedback.
+4. Do NOT create a new PR -- your commits will be pushed to the existing branch.
+5. Do NOT include "Closes #" or "Fixes #" in commit messages — the issue lives on a separate project board.
