@@ -1,8 +1,13 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas } from './Canvas';
+import { GameOverModal } from './GameOverModal';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { useInputHandler } from '@/hooks/useInputHandler';
+import { useGameState } from '@/hooks/useGameState';
 import { GameEngine } from '@/engine/GameEngine';
+import { Button } from '@/components/ui/button';
+import { GameState } from '@/types/game';
+import { GAME_UI_TEXT } from '@/constants/ui';
 
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 400;
@@ -11,9 +16,8 @@ const GRID_SIZE = 20;
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
+  const { gameState, setGameState } = useGameState();
   const [score, setScore] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
 
   const { getAndClearBuffer } = useInputHandler();
 
@@ -68,16 +72,7 @@ export function Game() {
       ctx.fill();
     }
 
-    if (engineRef.current.isGameOver()) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Game Over', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
-      ctx.font = '16px Arial';
-      ctx.fillText(`Score: ${engineRef.current.getScore()}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
-    } else if (!engineRef.current.isPlaying()) {
+    if (!engineRef.current.isPlaying()) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       ctx.fillStyle = '#ffffff';
@@ -98,15 +93,14 @@ export function Game() {
     engineRef.current.update();
 
     if (engineRef.current.isGameOver()) {
-      setGameOver(true);
-      setIsRunning(false);
+      setGameState('gameOver');
     }
 
     setScore(engineRef.current.getScore());
   }, [getAndClearBuffer]);
 
-  const { stop } = useGameLoop({
-    canvas: isRunning ? canvasRef.current : null,
+  useGameLoop({
+    canvas: gameState === 'playing' ? canvasRef.current : null,
     fps: 10,
     onUpdate: handleUpdate,
     onRender: handleRender,
@@ -115,80 +109,90 @@ export function Game() {
   const startGame = () => {
     if (!engineRef.current) return;
     engineRef.current.start();
-    setGameOver(false);
-    setIsRunning(true);
+    setGameState('playing');
   };
 
-  const restartGame = () => {
+  const pauseGame = () => {
+    if (!engineRef.current) return;
+    engineRef.current.pause();
+    setGameState('paused');
+  };
+
+  const resumeGame = () => {
+    if (!engineRef.current) return;
+    engineRef.current.resume();
+    setGameState('playing');
+  };
+
+  const resetGame = () => {
     if (!engineRef.current) return;
     engineRef.current.reset();
     setScore(0);
-    setGameOver(false);
+  };
+
+  const restartGame = () => {
+    resetGame();
     startGame();
   };
 
-  const toggleGame = () => {
-    if (!engineRef.current) return;
-    if (isRunning) {
-      engineRef.current.pause();
-      stop();
-      setIsRunning(false);
-    } else {
-      engineRef.current.resume();
-      setIsRunning(true);
-    }
+  const newGame = () => {
+    resetGame();
+    setGameState('idle');
   };
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="text-2xl font-bold">Score: {score}</div>
+    <div className="flex flex-col items-center gap-8 w-full max-w-md">
+      <div className="w-full">
+        <div className="text-sm font-medium text-muted-foreground mb-2">Score</div>
+        <div className="text-4xl font-bold">{score}</div>
+      </div>
+
       <Canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="bg-white shadow-lg border-2 border-gray-300"
+        className="w-full aspect-square shadow-lg border-2 border-border"
       />
-      <div className="flex gap-3">
-        {!isRunning && !gameOver && (
-          <button
-            onClick={startGame}
-            className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-semibold"
-          >
-            Start
-          </button>
-        )}
-        {isRunning && (
-          <button
-            onClick={toggleGame}
-            className="px-6 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-semibold"
-          >
-            Pause
-          </button>
-        )}
-        {gameOver && (
-          <>
-            <button
-              onClick={restartGame}
-              className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-semibold"
-            >
-              Restart
-            </button>
-            <button
-              onClick={() => {
-                if (engineRef.current) {
-                  engineRef.current.reset();
-                }
-                setScore(0);
-                setGameOver(false);
-                setIsRunning(false);
-              }}
-              className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 font-semibold"
-            >
-              New Game
-            </button>
-          </>
-        )}
+
+      <div className="flex flex-col w-full gap-3">
+        <div className="flex gap-2 justify-center">
+          {gameState === 'idle' && (
+            <Button onClick={startGame} size="lg" className="min-w-32">
+              {GAME_UI_TEXT.idle.buttons.start}
+            </Button>
+          )}
+
+          {gameState === 'playing' && (
+            <Button onClick={pauseGame} size="lg" variant="secondary" className="min-w-32">
+              {GAME_UI_TEXT.playing.buttons.pause}
+            </Button>
+          )}
+
+          {gameState === 'paused' && (
+            <>
+              <Button onClick={resumeGame} size="lg" className="min-w-32">
+                {GAME_UI_TEXT.paused.buttons.resume}
+              </Button>
+              <Button onClick={newGame} size="lg" variant="outline" className="min-w-32">
+                {GAME_UI_TEXT.paused.buttons.newGame}
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="text-xs text-muted-foreground text-center">
+          {gameState === 'idle' && GAME_UI_TEXT.idle.helpText}
+          {gameState === 'playing' && GAME_UI_TEXT.playing.helpText}
+          {gameState === 'paused' && GAME_UI_TEXT.paused.helpText}
+        </div>
       </div>
+
+      <GameOverModal
+        open={gameState === 'gameOver'}
+        score={score}
+        onRestart={restartGame}
+        onNewGame={newGame}
+      />
     </div>
   );
 }
