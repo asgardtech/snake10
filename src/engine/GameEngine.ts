@@ -123,14 +123,18 @@ export class GameEngine {
   }
 
   private spawnFood() {
-    let newFood: Position;
-    do {
-      newFood = {
+    const maxAttempts = 100;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const newFood: Position = {
         x: Math.floor(Math.random() * this.gridWidth),
         y: Math.floor(Math.random() * this.gridHeight),
       };
-    } while (this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y));
-    this.food = newFood;
+      if (!this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y)) {
+        this.food = newFood;
+        return;
+      }
+    }
+    this.gameState = 'gameOver';
   }
 
   getSnake(): Position[] {
