@@ -9,11 +9,13 @@ describe('GameEngine', () => {
   });
 
   describe('initialization', () => {
-    it('should initialize with snake at center', () => {
+    it('should initialize with snake at center with length 3', () => {
       engine.start();
       const snake = engine.getSnake();
-      expect(snake).toHaveLength(1);
+      expect(snake).toHaveLength(3);
       expect(snake[0]).toEqual({ x: 10, y: 10 });
+      expect(snake[1]).toEqual({ x: 9, y: 10 });
+      expect(snake[2]).toEqual({ x: 8, y: 10 });
     });
 
     it('should initialize with food on canvas', () => {
@@ -77,15 +79,36 @@ describe('GameEngine', () => {
       expect(snake[0]).toEqual({ x: 10, y: 9 });
     });
 
-    it('should wrap around canvas edges', () => {
+    it('should end game when hitting top boundary', () => {
       engine.setDirection('up');
-      engine.update();
+      for (let i = 0; i < 11; i++) {
+        engine.update();
+      }
+      expect(engine.isGameOver()).toBe(true);
+    });
+
+    it('should end game when hitting left boundary', () => {
       engine.setDirection('left');
       for (let i = 0; i < 11; i++) {
         engine.update();
       }
-      const snake = engine.getSnake();
-      expect(snake[0].x).toBe(19);
+      expect(engine.isGameOver()).toBe(true);
+    });
+
+    it('should end game when hitting right boundary', () => {
+      engine.setDirection('right');
+      for (let i = 0; i < 11; i++) {
+        engine.update();
+      }
+      expect(engine.isGameOver()).toBe(true);
+    });
+
+    it('should end game when hitting bottom boundary', () => {
+      engine.setDirection('down');
+      for (let i = 0; i < 11; i++) {
+        engine.update();
+      }
+      expect(engine.isGameOver()).toBe(true);
     });
 
     it('should prevent reversing into itself', () => {
@@ -161,7 +184,7 @@ describe('GameEngine', () => {
         y = engine.getSnake()[0].y;
       }
 
-      expect(engine.getScore()).toBe(initialScore + 10);
+      expect(engine.getScore()).toBe(initialScore + 1);
     });
 
     it('should spawn new food after consuming', () => {
@@ -190,8 +213,10 @@ describe('GameEngine', () => {
       engine.reset();
 
       const snake = engine.getSnake();
-      expect(snake).toHaveLength(1);
+      expect(snake).toHaveLength(3);
       expect(snake[0]).toEqual({ x: 10, y: 10 });
+      expect(snake[1]).toEqual({ x: 9, y: 10 });
+      expect(snake[2]).toEqual({ x: 8, y: 10 });
       expect(engine.getScore()).toBe(0);
       expect(engine.isGameOver()).toBe(false);
     });

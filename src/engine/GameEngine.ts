@@ -26,8 +26,12 @@ export class GameEngine {
   }
 
   reset() {
+    const centerX = Math.floor(this.gridWidth / 2);
+    const centerY = Math.floor(this.gridHeight / 2);
     this.snake = [
-      { x: Math.floor(this.gridWidth / 2), y: Math.floor(this.gridHeight / 2) },
+      { x: centerX, y: centerY },
+      { x: centerX - 1, y: centerY },
+      { x: centerX - 2, y: centerY },
     ];
     this.direction = 'right';
     this.nextDirection = 'right';
@@ -47,7 +51,7 @@ export class GameEngine {
     const head = this.snake[0];
     const newHead = this.getNextPosition(head, this.direction);
 
-    if (this.isCollision(newHead)) {
+    if (this.isCollision(newHead) || this.isBoundaryCollision(newHead)) {
       this.gameState = 'gameOver';
       return;
     }
@@ -55,7 +59,7 @@ export class GameEngine {
     this.snake.unshift(newHead);
 
     if (this.food && newHead.x === this.food.x && newHead.y === this.food.y) {
-      this.score += 10;
+      this.score += 1;
       this.spawnFood();
     } else {
       this.snake.pop();
@@ -73,16 +77,16 @@ export class GameEngine {
     const nextPos = { ...pos };
     switch (dir) {
       case 'up':
-        nextPos.y = (pos.y - 1 + this.gridHeight) % this.gridHeight;
+        nextPos.y = pos.y - 1;
         break;
       case 'down':
-        nextPos.y = (pos.y + 1) % this.gridHeight;
+        nextPos.y = pos.y + 1;
         break;
       case 'left':
-        nextPos.x = (pos.x - 1 + this.gridWidth) % this.gridWidth;
+        nextPos.x = pos.x - 1;
         break;
       case 'right':
-        nextPos.x = (pos.x + 1) % this.gridWidth;
+        nextPos.x = pos.x + 1;
         break;
     }
     return nextPos;
@@ -99,6 +103,10 @@ export class GameEngine {
 
   private isCollision(pos: Position): boolean {
     return this.snake.some((segment) => segment.x === pos.x && segment.y === pos.y);
+  }
+
+  private isBoundaryCollision(pos: Position): boolean {
+    return pos.x < 0 || pos.x >= this.gridWidth || pos.y < 0 || pos.y >= this.gridHeight;
   }
 
   private spawnFood() {
