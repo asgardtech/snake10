@@ -178,24 +178,12 @@ export function Game() {
               </Button>
             </>
           )}
-
-          {gameState === 'gameOver' && (
-            <>
-              <Button onClick={restartGame} size="lg" className="min-w-32">
-                {GAME_UI_TEXT.gameOver.buttons.restart}
-              </Button>
-              <Button onClick={newGame} size="lg" variant="outline" className="min-w-32">
-                {GAME_UI_TEXT.gameOver.buttons.newGame}
-              </Button>
-            </>
-          )}
         </div>
 
         <div className="text-xs text-muted-foreground text-center">
           {gameState === 'idle' && GAME_UI_TEXT.idle.helpText}
           {gameState === 'playing' && GAME_UI_TEXT.playing.helpText}
           {gameState === 'paused' && GAME_UI_TEXT.paused.helpText}
-          {gameState === 'gameOver' && GAME_UI_TEXT.gameOver.helpText}
         </div>
       </div>
 
