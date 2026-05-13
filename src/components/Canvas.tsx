@@ -26,7 +26,7 @@ export const Canvas = React.forwardRef<HTMLCanvasElement, CanvasProps>(
 
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
-    }, [width, height]);
+    }, [width, height, canvasRef]);
 
     return (
       <canvas

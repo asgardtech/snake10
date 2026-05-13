@@ -3,15 +3,27 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Game } from './Game';
 
 // Mock Canvas component to avoid rendering issues in tests
+interface MockCanvasProps {
+  ref: React.ForwardedRef<HTMLCanvasElement>;
+  width?: number;
+  height?: number;
+  className?: string;
+}
 vi.mock('./Canvas', () => ({
-  Canvas: ({ ref, ...props }: any) => (
+  Canvas: ({ ref, ...props }: MockCanvasProps) => (
     <canvas ref={ref} data-testid="game-canvas" {...props} />
   ),
 }));
 
 // Mock GameOverModal to avoid dialog rendering issues in tests
+interface MockGameOverModalProps {
+  open: boolean;
+  score: number;
+  onRestart: () => void;
+  onNewGame: () => void;
+}
 vi.mock('./GameOverModal', () => ({
-  GameOverModal: ({ open, score, onRestart, onNewGame }: any) => (
+  GameOverModal: ({ open, score, onRestart, onNewGame }: MockGameOverModalProps) => (
     open ? (
       <div data-testid="game-over-modal">
         <div>Game Over</div>
