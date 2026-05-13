@@ -162,22 +162,36 @@ describe('GameEngine', () => {
 
     it('should grow snake when head reaches food position', () => {
       const initialLength = engine.getSnake().length;
+      engine.setFood({ x: 11, y: 10 });
       engine.setDirection('right');
-      for (let i = 0; i < 100; i++) {
-        engine.update();
-        if (engine.getSnake().length > initialLength) break;
-      }
-      expect(engine.getSnake().length).toBeGreaterThanOrEqual(initialLength);
+      engine.update();
+      expect(engine.getSnake()).toHaveLength(initialLength + 1);
     });
 
     it('should increment score when eating food', () => {
       const initialScore = engine.getScore();
+      engine.setFood({ x: 11, y: 10 });
       engine.setDirection('right');
-      for (let i = 0; i < 100; i++) {
-        engine.update();
-        if (engine.getScore() > initialScore) break;
-      }
-      expect(engine.getScore()).toBeGreaterThanOrEqual(initialScore);
+      engine.update();
+      expect(engine.getScore()).toBe(initialScore + 1);
+    });
+
+    it('should spawn new food after consuming', () => {
+      const initialFood = engine.getFood();
+      engine.setFood({ x: 11, y: 10 });
+      const foodBeforeConsume = engine.getFood();
+      engine.setDirection('right');
+      engine.update();
+      const foodAfterConsume = engine.getFood();
+      expect(foodBeforeConsume).toEqual({ x: 11, y: 10 });
+      expect(foodAfterConsume).not.toEqual(foodBeforeConsume);
+      expect(foodAfterConsume).not.toBeNull();
+      const newFood = foodAfterConsume!;
+      expect(newFood.x).toBeGreaterThanOrEqual(0);
+      expect(newFood.x).toBeLessThan(20);
+      expect(newFood.y).toBeGreaterThanOrEqual(0);
+      expect(newFood.y).toBeLessThan(20);
+      expect(engine.getSnake().some((seg) => seg.x === newFood.x && seg.y === newFood.y)).toBe(false);
     });
   });
 
