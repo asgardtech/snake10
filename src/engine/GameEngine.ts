@@ -122,15 +122,27 @@ export class GameEngine {
     return this.snake.some((segment) => segment.x === pos.x && segment.y === pos.y);
   }
 
-  private spawnFood() {
-    let newFood: Position;
-    do {
-      newFood = {
+  private spawnFood(): void {
+    const maxAttempts = 100;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const newFood: Position = {
         x: Math.floor(Math.random() * this.gridWidth),
         y: Math.floor(Math.random() * this.gridHeight),
       };
-    } while (this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y));
-    this.food = newFood;
+      if (!this.snake.some((segment) => segment.x === newFood.x && segment.y === newFood.y)) {
+        this.food = newFood;
+        return;
+      }
+    }
+    // Fallback: scan for first available position
+    for (let x = 0; x < this.gridWidth; x++) {
+      for (let y = 0; y < this.gridHeight; y++) {
+        if (!this.snake.some((segment) => segment.x === x && segment.y === y)) {
+          this.food = { x, y };
+          return;
+        }
+      }
+    }
   }
 
   getSnake(): Position[] {
