@@ -141,6 +141,10 @@ export class GameEngine {
     return this.food;
   }
 
+  setFood(position: Position): void {
+    this.food = position;
+  }
+
   getScore(): number {
     return this.score;
   }
