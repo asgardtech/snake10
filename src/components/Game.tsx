@@ -2,19 +2,20 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas } from './Canvas';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { useInputHandler } from '@/hooks/useInputHandler';
+import { useGameState } from '@/hooks/useGameState';
 import { GameEngine } from '@/engine/GameEngine';
 import { Button } from '@/components/ui/button';
+import { GameState } from '@/types/game';
+import { GAME_UI_TEXT } from '@/constants/ui';
 
 const CANVAS_WIDTH = 400;
 const CANVAS_HEIGHT = 400;
 const GRID_SIZE = 20;
 
-type GameState = 'idle' | 'playing' | 'paused' | 'gameOver';
-
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
-  const [gameState, setGameState] = useState<GameState>('idle');
+  const { gameState, setGameState } = useGameState();
   const [score, setScore] = useState(0);
 
   const { getAndClearBuffer } = useInputHandler();
@@ -165,23 +166,23 @@ export function Game() {
         <div className="flex gap-2 justify-center">
           {gameState === 'idle' && (
             <Button onClick={startGame} size="lg" className="min-w-32">
-              Start Game
+              {GAME_UI_TEXT.idle.buttons.start}
             </Button>
           )}
 
           {gameState === 'playing' && (
             <Button onClick={pauseGame} size="lg" variant="secondary" className="min-w-32">
-              Pause
+              {GAME_UI_TEXT.playing.buttons.pause}
             </Button>
           )}
 
           {gameState === 'paused' && (
             <>
               <Button onClick={resumeGame} size="lg" className="min-w-32">
-                Resume
+                {GAME_UI_TEXT.paused.buttons.resume}
               </Button>
               <Button onClick={newGame} size="lg" variant="outline" className="min-w-32">
-                New Game
+                {GAME_UI_TEXT.paused.buttons.newGame}
               </Button>
             </>
           )}
@@ -189,20 +190,20 @@ export function Game() {
           {gameState === 'gameOver' && (
             <>
               <Button onClick={restartGame} size="lg" className="min-w-32">
-                Restart
+                {GAME_UI_TEXT.gameOver.buttons.restart}
               </Button>
               <Button onClick={newGame} size="lg" variant="outline" className="min-w-32">
-                New Game
+                {GAME_UI_TEXT.gameOver.buttons.newGame}
               </Button>
             </>
           )}
         </div>
 
         <div className="text-xs text-muted-foreground text-center">
-          {gameState === 'idle' && 'Use arrow keys or WASD to control the snake'}
-          {gameState === 'playing' && 'Playing... Use arrow keys or WASD to control the snake'}
-          {gameState === 'paused' && 'Game paused'}
-          {gameState === 'gameOver' && 'Game Over! Your game has ended.'}
+          {gameState === 'idle' && GAME_UI_TEXT.idle.helpText}
+          {gameState === 'playing' && GAME_UI_TEXT.playing.helpText}
+          {gameState === 'paused' && GAME_UI_TEXT.paused.helpText}
+          {gameState === 'gameOver' && GAME_UI_TEXT.gameOver.helpText}
         </div>
       </div>
     </div>

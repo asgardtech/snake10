@@ -1,5 +1,5 @@
 export type Direction = 'up' | 'down' | 'left' | 'right';
-export type GameState = 'idle' | 'playing' | 'gameOver';
+export type GameState = 'idle' | 'playing' | 'paused' | 'gameOver';
 
 interface Position {
   x: number;
@@ -46,18 +46,18 @@ export class GameEngine {
 
   pause() {
     if (this.gameState === 'playing') {
-      this.gameState = 'idle';
+      this.gameState = 'paused';
     }
   }
 
   resume() {
-    if (this.gameState === 'idle') {
+    if (this.gameState === 'paused') {
       this.gameState = 'playing';
     }
   }
 
   update() {
-    if (this.gameState !== 'playing') return;
+    if (this.gameState !== 'playing') return; // Only update when actively playing, not when paused
 
     this.direction = this.nextDirection;
     const head = this.snake[0];

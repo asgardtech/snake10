@@ -50,7 +50,7 @@ describe('GameEngine', () => {
       expect(engine.isPlaying()).toBe(true);
       engine.pause();
       expect(engine.isPlaying()).toBe(false);
-      expect(engine.getGameState()).toBe('idle');
+      expect(engine.getGameState()).toBe('paused');
     });
 
     it('should resume game when resume is called', () => {
