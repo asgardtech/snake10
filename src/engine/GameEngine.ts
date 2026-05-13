@@ -1,5 +1,6 @@
+import { GameState } from '@/types/game';
+
 export type Direction = 'up' | 'down' | 'left' | 'right';
-export type GameState = 'idle' | 'playing' | 'paused' | 'gameOver';
 
 interface Position {
   x: number;
