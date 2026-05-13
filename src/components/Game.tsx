@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas } from './Canvas';
+import { GameOverModal } from './GameOverModal';
 import { useGameLoop } from '@/hooks/useGameLoop';
 import { useInputHandler } from '@/hooks/useInputHandler';
 import { useGameState } from '@/hooks/useGameState';
@@ -71,16 +72,7 @@ export function Game() {
       ctx.fill();
     }
 
-    if (engineRef.current.isGameOver()) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Game Over', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
-      ctx.font = '16px Arial';
-      ctx.fillText(`Score: ${engineRef.current.getScore()}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 10);
-    } else if (!engineRef.current.isPlaying()) {
+    if (!engineRef.current.isPlaying()) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       ctx.fillStyle = '#ffffff';
@@ -206,6 +198,13 @@ export function Game() {
           {gameState === 'gameOver' && GAME_UI_TEXT.gameOver.helpText}
         </div>
       </div>
+
+      <GameOverModal
+        open={gameState === 'gameOver'}
+        score={score}
+        onRestart={restartGame}
+        onNewGame={newGame}
+      />
     </div>
   );
 }

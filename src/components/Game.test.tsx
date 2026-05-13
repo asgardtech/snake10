@@ -9,6 +9,24 @@ vi.mock('./Canvas', () => ({
   ),
 }));
 
+// Mock GameOverModal to avoid dialog rendering issues in tests
+vi.mock('./GameOverModal', () => ({
+  GameOverModal: ({ open, score, onRestart, onNewGame }: any) => (
+    open ? (
+      <div data-testid="game-over-modal">
+        <div>Game Over</div>
+        <div data-testid="game-over-score">{score}</div>
+        <button onClick={onRestart} data-testid="restart-button">
+          Restart
+        </button>
+        <button onClick={onNewGame} data-testid="new-game-button">
+          New Game
+        </button>
+      </div>
+    ) : null
+  ),
+}));
+
 // Mock useGameLoop to avoid actual animation loop
 vi.mock('@/hooks/useGameLoop', () => ({
   useGameLoop: () => {},
