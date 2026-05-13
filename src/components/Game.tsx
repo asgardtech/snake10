@@ -131,17 +131,19 @@ export function Game() {
     setGameState('playing');
   };
 
-  const restartGame = () => {
+  const resetGame = () => {
     if (!engineRef.current) return;
     engineRef.current.reset();
     setScore(0);
-    setGameState('idle');
+  };
+
+  const restartGame = () => {
+    resetGame();
+    startGame();
   };
 
   const newGame = () => {
-    if (!engineRef.current) return;
-    engineRef.current.reset();
-    setScore(0);
+    resetGame();
     setGameState('idle');
   };
 
