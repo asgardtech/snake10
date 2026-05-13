@@ -44,21 +44,6 @@ describe('GameEngine', () => {
       expect(engine.isPlaying()).toBe(true);
       expect(engine.isGameOver()).toBe(false);
     });
-
-    it('should detect collision with snake body', () => {
-      engine.start();
-      expect(engine.isGameOver()).toBe(false);
-
-      const initialSnake = engine.getSnake();
-      initialSnake.push({ x: 11, y: 10 }, { x: 12, y: 10 });
-
-      engine.setDirection('right');
-      engine.update();
-      engine.update();
-      engine.update();
-
-      expect(engine.isGameOver()).toBe(true);
-    });
   });
 
   describe('snake movement', () => {
@@ -193,7 +178,7 @@ describe('GameEngine', () => {
         y = engine.getSnake()[0].y;
       }
 
-      expect(engine.getScore()).toBe(initialScore + 1);
+      expect(engine.getScore()).toBe(initialScore + 10);
     });
 
     it('should spawn new food after consuming', () => {

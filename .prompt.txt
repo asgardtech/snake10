@@ -497,6 +497,159 @@ The implementation is technically sound overall, but the wraparound/boundary col
 
 **VERDICT: CHANGES_REQUESTED**
 
+---
+
+**viovanov:**
+# Review: Build game engine with state and fixed tick-rate loop (PR #9)
+
+## Summary
+
+This PR implements a complete game engine with proper state management and a decoupled fixed tick-rate loop (10 FPS game logic, 60 FPS rendering). The implementation is architecturally sound with comprehensive tests and clean React integration.
+
+## ✅ Strengths
+
+### GameEngine Architecture
+- **State management**: Properly implements three game states (idle, playing, gameOver) with correct state transitions
+- **Fixed tick-rate**: 10 FPS game updates clearly separated from rendering via `useGameLoop` hook, preventing frame-rate dependency bugs
+- **Direction buffering**: Correctly stores `nextDirection` and applies at each tick, preventing missed inputs between updates
+- **Opposite direction prevention**: Properly rejects 180-degree direction changes to prevent immediate self-collision
+
+### Game Logic Correctness
+- **Snake movement**: Correctly implements wraparound using proper modulo arithmetic: `((nextX % gridWidth) + gridWidth) % gridWidth` handles both positive and negative wrapping
+- **Collision detection**: Checks new head position against entire snake body
+- **Food mechanics**: Properly spawns food avoiding snake segments, grows snake on consumption
+- **Score tracking**: Increments on food consumption
+- **Reset functionality**: Completely resets game to initial state
+
+### Test Coverage
+- 263 lines of comprehensive tests covering:
+  - State initialization and transitions
+  - Snake movement in all directions
+  - Wraparound behavior at all grid edges
+  - Direction buffering and opposite direction rejection
+  - Food consumption and snake growth
+  - Score tracking
+  - Game reset
+- Tests use clear naming and are well-organized
+
+### UI Integration
+- **Game loop integration**: Properly integrates with 10 FPS tick rate via `useGameLoop`
+- **Input handling**: Uses `useInputHandler` to buffer keyboard input at tick granularity
+- **Rendering**: Displays grid, green snake with darker head, red food (circle), score, and state overlays
+- **Button states**: Correctly shows Start/Pause/Restart/New Game buttons based on game state
+- **Visual feedback**: Clear overlays for idle state ("Press Start to begin") and game over state with score
+
+## ⚠️ Issues Found
+
+### 1. Score Increment Mismatch (Medium Priority)
+
+**Issue**: The PR summary states "Awards 10 points per food consumed," but the implementation increments score by 1:
+```typescript
+this.score += 1;  // GameEngine.ts line 61
+```
+
+The test also expects 1 point:
+```typescript
+expect(engine.getScore()).toBe(initialScore + 1);
+```
+
+**Impact**: Code inconsistency - either the description is wrong or the implementation is wrong. The issue specification doesn't define the score increment amount, so both are technically valid, but they should match.
+
+**Recommendation**: Clarify and make consistent. Either update code to award 10 points or update description to say 1 point.
+
+### 2. Mutable Reference to Internal State (Low Priority)
+
+**Issue**: The `getSnake()` method returns a direct reference to the internal snake array rather than a copy:
+```typescript
+getSnake(): Position[] {
+  return this.snake;
+}
+```
+
+This allows external code (including tests) to mutate the engine's internal state:
+```typescript
+const initialSnake = engine.getSnake();
+initialSnake.push({ x: 11, y: 10 }, { x: 12, y: 10 });
+```
+
+**Impact**: Breaks encapsulation. While it enables test setup, it also allows accidental mutation of game state by consuming code.
+
+**Recommendation**: Either document that the return value is mutable (and intended for testing), or return a copy: `return [...this.snake]` to prevent external mutations.
+
+## 📋 Specification Compliance
+
+| Requirement | Status | Notes |
+|------------|--------|-------|
+| Game engine class | ✅ | GameEngine properly encapsulates all game logic |
+| State management | ✅ | Three states with proper transitions |
+| Fixed tick-rate loop | ✅ | 10 FPS via useGameLoop hook |
+| Input buffering | ✅ | Direction changes queued via nextDirection |
+| Opposite direction prevention | ✅ | 180-degree turns rejected |
+| Collision detection | ✅ | Self-collision detection implemented |
+| Food mechanics | ✅ | Spawning, consumption, growth all working |
+| Wraparound movement | ✅ | Grid edges wrap correctly with modulo arithmetic |
+| Score tracking | ✅ | Points awarded and displayed |
+| Rendering | ✅ | Grid, snake, food, overlays render correctly |
+| Game lifecycle | ✅ | Idle → Playing → GameOver → Reset flow works |
+
+## 🎮 Functional Verification
+
+- ✅ Game initializes in idle state with "Press Start" overlay
+- ✅ Start button transitions to playing state
+- ✅ Snake moves based on keyboard input
+- ✅ Food appears and snake grows when consumed
+- ✅ Score increments on food consumption
+- ✅ Pause/Resume preserves game state
+- ✅ Collision detection triggers game over
+- ✅ Game Over screen displays final score
+- ✅ Restart/New Game buttons properly reset state
+
+## 🔍 Edge Cases
+
+- **Wraparound**: Correctly handled in all four directions with proper modulo arithmetic
+- **Opposite directions**: Cannot move in opposite direction of current movement
+- **Direction buffering**: Last valid direction is correctly applied
+- **Food spawning**: Properly avoids snake body during random spawn
+- **Game reset**: Clears state completely and returns to idle
+
+## Conclusion
+
+The implementation correctly addresses the core specification ("Build game engine with state and fixed tick-rate loop"). The engine is architecturally sound with comprehensive test coverage. The main issue is the score increment documentation mismatch, which should be resolved before merging. The code style and organization are good, with clear separation between game logic (GameEngine) and UI (Game component).
+
+**Requires fix**: Score increment clarification (1 point vs 10 points claimed in description)
+
+---
+
+**viovanov:**
+## Automated Code Review
+
+Perfect! I've completed the review and posted it to the PR. Here's my analysis:
+
+## Review Summary
+
+The PR implements the core specification well - it successfully builds a game engine with state management and a fixed 10 FPS tick-rate loop. The architecture is solid, with clean separation between GameEngine logic and the React UI component. Test coverage is comprehensive.
+
+**Issues Found:**
+
+1. **Score Increment Mismatch (Medium)**: The PR summary claims "Awards 10 points per food consumed," but the code increments by only 1 point. The tests also expect 1 point. This documentation/implementation inconsistency needs to be resolved.
+
+2. **Mutable Reference to Internal State (Low)**: The `getSnake()` method returns a direct reference rather than a copy, breaking encapsulation and allowing external mutation of internal state.
+
+**Specification Compliance**: All major requirements are met:
+- ✅ Game engine class with proper state management
+- ✅ Fixed tick-rate loop (10 FPS) 
+- ✅ Direction buffering and input handling
+- ✅ Collision detection and food mechanics
+- ✅ Wraparound movement with correct modulo arithmetic
+- ✅ Comprehensive test coverage
+- ✅ React integration with proper rendering
+
+The main blocker is the score increment documentation mismatch that should be clarified before merging.
+
+---
+
+**VERDICT: CHANGES_REQUESTED**
+
 Instructions:
 1. Read the review feedback above carefully.
 2. Address each piece of feedback by modifying the code.

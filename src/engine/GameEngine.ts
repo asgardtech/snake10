@@ -59,7 +59,7 @@ export class GameEngine {
     this.snake.unshift(newHead);
 
     if (this.food && newHead.x === this.food.x && newHead.y === this.food.y) {
-      this.score += 1;
+      this.score += 10;
       this.spawnFood();
     } else {
       this.snake.pop();
@@ -122,7 +122,7 @@ export class GameEngine {
   }
 
   getSnake(): Position[] {
-    return this.snake;
+    return [...this.snake];
   }
 
   getFood(): Position | null {
