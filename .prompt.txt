@@ -1,0 +1,505 @@
+You are an autonomous coding agent. Your pull request #9 received review feedback and needs changes.
+
+## Original Issue #3: Build game engine with state and fixed tick-rate loop
+
+(no description)
+
+## Review Feedback
+
+**viovanov:**
+# Review: Build game engine with state and fixed tick-rate loop (PR #9)
+
+## Summary
+This PR implements a complete game engine with fixed tick-rate loop and proper game state management. The implementation is solid with good architecture, comprehensive tests, and proper React integration. The code correctly addresses the specification requirements.
+
+## ✅ Strengths
+
+### GameEngine Architecture
+- **State management**: Properly implements three game states (idle, playing, gameOver) with correct transitions
+- **Fixed tick-rate**: 10 FPS game updates cleanly separated from rendering (60 FPS), preventing frame-rate dependency bugs
+- **Direction buffering**: Correctly stores the next direction and applies it at the next tick, preventing missed inputs
+- **Opposite direction prevention**: Properly rejects 180-degree turns to prevent immediate self-collision
+
+### Game Logic Correctness
+- **Snake movement**: Correctly implements wraparound with proper modulo arithmetic `(pos - 1 + gridSize) % gridSize` for negative values
+- **Collision detection**: Checks new head position against all snake segments
+- **Food mechanics**: Properly grows snake when food is consumed and ensures food doesn't spawn on snake body
+- **Score tracking**: Awards 10 points per food consumed
+
+### Test Coverage
+- 229 lines of comprehensive tests covering:
+  - State initialization and transitions
+  - Snake movement in all directions
+  - Wraparound edges (verified modulo arithmetic)
+  - Direction buffering with opposite direction rejection
+  - Food consumption and snake growth
+  - Score increment
+  - Game reset
+- Tests are well-structured with clear test names and proper setup/teardown
+
+### UI Integration
+- **Game loop integration**: Correctly uses `useGameLoop` with 10 FPS tick rate
+- **Input handling**: Properly integrates `useInputHandler` for keyboard input buffering
+- **Rendering**: Displays snake (with darker head), food (red circle), grid, and game state overlays
+- **Button states**: Shows appropriate buttons based on game state (Start/Pause/Restart/New Game)
+- **State synchronization**: Properly updates React state (score, gameOver) when engine state changes
+
+## 📋 Specification Compliance Check
+
+| Requirement | Status | Notes |
+|------------|--------|-------|
+| Game engine class | ✅ | GameEngine properly encapsulates all game logic |
+| Fixed tick-rate loop | ✅ | 10 FPS implemented via useGameLoop hook |
+| Game state management | ✅ | Three states (idle, playing, gameOver) with transitions |
+| Input buffering | ✅ | Direction queuing prevents missed inputs |
+| Opposite direction prevention | ✅ | 180-degree turns correctly rejected |
+| Collision detection | ✅ | Self-collision detection implemented |
+| Food mechanics | ✅ | Spawning, consumption, and growth working |
+| Wraparound movement | ✅ | Grid edges wrap correctly |
+| Score tracking | ✅ | Points awarded and displayed |
+| React integration | ✅ | Component properly integrates engine |
+| Rendering | ✅ | Snake, food, grid, and overlays render correctly |
+
+## 🎮 Functional Verification
+
+**Game flow:**
+1. ✅ Initial state shows "Press Start to begin" overlay with Start button
+2. ✅ Clicking Start transitions to playing state and begins game loop
+3. ✅ Snake moves in response to keyboard input
+4. ✅ Food appears and snake grows when consumed
+5. ✅ Score increments by 10 per food
+6. ✅ Pause/Resume functionality preserves game state
+7. ✅ Self-collision ends game and shows Game Over overlay
+8. ✅ Restart/New Game buttons properly reset state
+
+## 🔍 Edge Cases Verified
+
+- **Wraparound**: Movement across edges correctly handled with modulo arithmetic
+- **Opposite directions**: Properly prevents attempting to reverse into self
+- **Direction buffering**: Last valid direction is correctly applied
+- **Food spawning**: Does not spawn on snake body
+- **Game reset**: Clears snake to single segment, resets score to 0, returns to idle state
+
+## ✨ Code Quality
+
+- Clean separation of concerns between engine logic and UI rendering
+- Proper TypeScript types (Direction, GameState, Position)
+- Consistent naming conventions
+- Well-commented test file explaining each test's purpose
+- No obvious performance issues; fixed tick-rate prevents frame-rate dependency bugs
+
+## Recommendation
+
+The implementation is **complete and correct**. All specification requirements are properly implemented:
+- ✅ Game engine with proper state management
+- ✅ Fixed 10 FPS tick-rate loop decoupled from rendering
+- ✅ All game mechanics (movement, collision, food, scoring)
+- ✅ Comprehensive test coverage
+- ✅ Full React integration with proper UI
+
+The code is production-ready with no blocking issues.
+
+---
+
+**viovanov:**
+## Automated Code Review
+
+## Review Complete
+
+I've thoroughly reviewed PR #9 implementing the game engine with fixed tick-rate loop. Here's my assessment:
+
+**Key Findings:**
+- ✅ GameEngine correctly implements three-state system (idle → playing → gameOver)
+- ✅ Fixed 10 FPS tick-rate properly decoupled from rendering
+- ✅ Direction buffering prevents missed inputs; opposite direction prevention prevents self-collision
+- ✅ All game mechanics work: snake movement with wraparound, collision detection, food spawning, scoring
+- ✅ Comprehensive 229-line test suite covering state transitions, movement, collision, food mechanics
+- ✅ React integration properly syncs engine state with UI (buttons, overlays, score display)
+- ✅ No blocking issues; code is production-ready
+
+The implementation fully addresses the specification and is well-engineered with proper test coverage.
+
+**Review posted:** https://github.com/asgardtech/snake10/pull/9#issuecomment-4443705148
+
+VERDICT: APPROVED
+
+---
+
+**viovanov:**
+# QA Test Results for PR #9: Build Game Engine with State and Fixed Tick-Rate Loop
+
+**Date:** 2026-05-13  
+**Branch:** snake10-issue-3  
+**PR #:** 9  
+**Related Issue:** #3
+
+## Executive Summary
+
+**Test Status:** ⚠️ **PARTIAL PASS WITH ISSUES**
+
+- **Total Tests:** 44
+- **Passing:** 42 ✅
+- **Failing:** 2 ❌
+- **Test Coverage:** 90.9%
+
+The implementation successfully passes most acceptance criteria for the core game engine. However, there are **critical discrepancies** between the acceptance criteria and the implementation that require clarification:
+
+1. **Wall Collision Behavior:** Implementation wraps around boundaries instead of triggering game-over
+2. **Reverse Direction Prevention:** Direction-setting logic needs clarification
+3. **Initial Snake Length:** Implementation starts with length 1, acceptance test expects 3
+
+## Detailed Test Results
+
+### Test Suite 1: GameEngine Core Tests (18 tests)
+**Status:** ✅ **ALL PASSING**
+
+These tests verify basic engine functionality:
+- ✅ Snake initialization and positioning
+- ✅ Food spawning and placement
+- ✅ Score initialization
+- ✅ Game state transitions (idle → playing → gameOver)
+- ✅ Snake movement mechanics
+- ✅ Grid wraparound behavior
+- ✅ Direction buffering
+- ✅ Opposite direction prevention
+- ✅ Snake length maintenance
+- ✅ Food consumption and snake growth
+- ✅ Score increment on food consumption
+- ✅ Game reset functionality
+
+### Test Suite 2: GameEngine Acceptance Criteria Tests (19 tests)
+**Status:** ⚠️ **17 PASSING, 2 FAILING**
+
+#### AC1: Snake Initialization ✅
+- **Result:** PASS
+- **Verification:** Snake initializes at grid center (10, 10), score = 0, starts in idle state
+- **Note:** Implementation uses length 1, acceptance test specifies "length (e.g., 3)" - **DISCREPANCY NOTED**
+
+#### AC2: Snake Movement (Fixed Tick) ✅
+- **Result:** PASS
+- **Verification:** Snake moves exactly 1 grid cell per tick, head moves, tail removed
+
+#### AC3: Direction Buffering ✅
+- **Result:** PASS
+- **Verification:** Direction changes are buffered and applied at next tick
+- **Verification:** Multiple direction changes use last buffered value
+
+#### AC4: Self-Collision Detection ⚠️
+- **Result:** PARTIAL PASS (1/2 tests)
+  - ✅ PASS: "Self-collision triggers game-over when snake >= 4 segments"
+  - ❌ FAIL: "Reversing into self is prevented" - Test setup issue, core logic works
+
+#### AC5: Wall Collision Detection ❌
+- **Result:** FAIL - CRITICAL DISCREPANCY
+- **Acceptance Criteria:** "When head moves past boundary, game enters game-over state"
+- **Implementation:** Snake wraps around using modulo arithmetic
+- **Impact:** Fundamental design difference requiring decision
+
+#### AC6: Food Initialization ✅
+- **Result:** PASS
+- **Verification:** Food spawns at random grid position not occupied by snake
+
+#### AC7: Food Consumption ✅
+- **Result:** PASS (3/3 tests)
+- **Verification:** Snake grows, score increments by 10, new food spawns
+
+#### AC8: Game-Over State Behavior ✅
+- **Result:** PASS (2/2 tests)
+- **Verification:** No updates during game-over, reset clears state
+
+#### AC9: Pause/Resume Functionality ✅
+- **Result:** PASS (2/2 tests)
+- **Note:** Uses state transitions (idle/playing) rather than explicit pause method
+
+### Test Suite 3: Input Handler Tests (6 tests)
+**Status:** ✅ **ALL PASSING**
+
+- ✅ Arrow key and WASD input buffering
+- ✅ Direction buffer persistence
+- ✅ Callback invocation
+- ✅ Non-directional key filtering
+
+### Test Suite 4: Component Tests (1 test)
+**Status:** ✅ **PASSING**
+
+- ✅ App renders correctly
+
+## Critical Issues Found
+
+### 🔴 Issue 1: Wall Collision vs. Wraparound (DESIGN DECISION)
+**Severity:** HIGH  
+**Impact:** AC5 not met as specified
+
+**Acceptance Criteria (AC5):**
+> "Given the snake's head is 1 cell away from a boundary, When a tick moves the head past the boundary, Then the game enters game-over state."
+
+**Current Implementation:** Uses modulo wraparound instead of collision detection
+
+**PR Description:** States "Wraparound movement: Snake wraps around grid edges"
+
+**Recommendation:** Align specification with implementation or vice versa
+
+---
+
+### 🟡 Issue 2: Initial Snake Length Discrepancy
+**Severity:** MEDIUM  
+**Impact:** AC1 partially not met as specified
+
+**Specification:** "snake has initial length (e.g., 3)"  
+**Implementation:** Length = 1
+
+**Recommendation:** Clarify intended starting state
+
+---
+
+### 🟡 Issue 3: Score Increment Value
+**Severity:** LOW  
+**Impact:** Minor game balance difference
+
+**Specification:** "score increments by 1"  
+**Implementation:** "+10 per food"
+
+**Recommendation:** Confirm design intent
+
+---
+
+## Test Execution Summary
+
+```
+Test Files:  1 failed | 3 passed (4)
+Tests:       2 failed | 42 passed (44)
+Pass Rate:   95.5%
+```
+
+## Integration Testing Checklist
+
+Manual verification needed:
+- [ ] Visual rendering of snake head (darker color) vs body
+- [ ] Keyboard controls responsive (arrow keys & WASD)
+- [ ] Game-over screen displays correct final score
+- [ ] Start/pause/restart buttons work correctly
+- [ ] Score display updates in real-time
+- [ ] Canvas grid renders accurately
+
+## Recommendations
+
+### Priority 1: Resolve Boundary Behavior (BLOCKING)
+- [ ] Decision: Keep wraparound OR implement wall collision
+- [ ] Update either issue #3 or GameEngine.ts to align
+
+### Priority 2: Clarify Initial Snake Length
+- [ ] Decision: Keep length 1 OR change to length 3
+- [ ] Update specification or code accordingly
+
+### Priority 3: Confirm Score Increment
+- [ ] Decision: Verify +10 points per food is correct
+- [ ] Update specification if needed
+
+### Priority 4: Manual Integration Testing
+- [ ] Test in browser across multiple devices
+- [ ] Verify visual design matches mockups
+- [ ] Test edge cases (rapid input, edge collisions)
+
+---
+
+## Test Files Created
+
+**New Test File:** `src/engine/GameEngine.acceptance.test.ts`
+- 19 comprehensive tests mapping to each acceptance criterion
+- Documents specification vs. implementation discrepancies
+- Provides clear pass/fail status for each requirement
+
+## Verdict
+
+The implementation demonstrates a **functionally complete game engine** with proper state management, fixed tick-rate game loop, and input handling. Core mechanics work correctly.
+
+However, **3 design discrepancies** exist between specification and implementation that must be resolved before final approval:
+
+1. Boundary behavior (wall collision vs. wraparound)
+2. Initial snake length (1 vs. 3)
+3. Score increment (10 vs. 1)
+
+These appear to be intentional design decisions, not bugs. Recommend reviewing the design decisions with the team and updating either the specification (issue #3) or implementation (PR #9) to align, then re-running acceptance tests.
+
+---
+
+**viovanov:**
+## Automated QA Report
+
+Perfect! I've completed the QA testing for PR #9. Let me provide you with a summary:
+
+## Test Results Summary
+
+I've written and run comprehensive automated tests for the game engine implementation:
+
+**Test Metrics:**
+- **Total Tests:** 44
+- **Passing:** 42 ✅
+- **Failing:** 2 ❌
+- **Pass Rate:** 95.5%
+
+**Test Coverage:**
+- GameEngine Core Tests: 18 tests (all passing)
+- Acceptance Criteria Tests: 19 tests (17 passing, 2 failing)
+- Input Handler Tests: 6 tests (all passing)
+- Component Tests: 1 test (passing)
+
+## Key Findings
+
+The implementation is **functionally complete** with proper state management, fixed tick-rate loop, and input handling. However, I identified **3 critical design discrepancies** between the acceptance criteria (issue #3) and the implementation (PR #9):
+
+### 🔴 Issue 1: Boundary Behavior (BLOCKING)
+- **Acceptance Criteria (AC5):** Snake hits wall → game-over
+- **Implementation:** Snake wraps around using modulo
+- **PR Description:** Confirms wraparound as intended design
+
+### 🟡 Issue 2: Initial Snake Length
+- **Acceptance Criteria (AC1):** "length (e.g., 3)"
+- **Implementation:** Length = 1
+
+### 🟡 Issue 3: Score Increment
+- **Acceptance Criteria (AC7):** "score increments by 1"
+- **Implementation:** "+10 points per food"
+
+## Deliverables
+
+✅ Created `src/engine/GameEngine.acceptance.test.ts` - 19 comprehensive acceptance tests  
+✅ Committed test files to the branch  
+✅ Posted detailed QA report as PR comment at: https://github.com/asgardtech/snake10/pull/9#issuecomment-4443728340
+
+The report documents each acceptance criterion with pass/fail status, identifies the design discrepancies, and provides recommendations for alignment.
+
+---
+
+**VERDICT: CHANGES_REQUESTED**
+
+The implementation is functionally sound but has **3 design discrepancies with the specification** that require resolution. The team should either:
+1. Update issue #3 specification to match the wraparound/length-1/+10-points design, OR
+2. Modify the GameEngine implementation to match the original specification
+
+After alignment, all acceptance tests should pass.
+
+---
+
+**viovanov:**
+# Code Review: PR #9 - Build Game Engine with State and Fixed Tick-Rate Loop
+
+## Summary
+This PR implements the core game engine for Snake with state management, game lifecycle transitions, and a fixed 10 FPS tick-rate loop decoupled from rendering. The implementation is well-structured with comprehensive tests. However, there is a **critical mismatch** between the stated behavior and actual implementation regarding boundary handling.
+
+## ✅ Strengths
+
+### Architecture & Design
+- **Clean separation of concerns**: GameEngine handles all game logic, Game component handles rendering and UI
+- **Proper state management**: Three states (idle, playing, gameOver) with well-defined transitions
+- **Decoupled logic/rendering**: Fixed 10 FPS game updates with 60 FPS rendering prevents frame-rate dependency issues
+- **Direction buffering**: Input changes are queued to prevent missed inputs between ticks
+
+### Implementation Quality
+- **Comprehensive test suite**: 254 lines of tests covering initialization, state transitions, movement, collision, food mechanics, and reset
+- **Solid game logic**: 
+  - Self-collision detection works correctly
+  - Food spawning ensures it never appears on snake body
+  - Score tracking increments properly on food consumption
+  - Opposite direction prevention prevents snake reversing into itself
+- **Good null safety**: Both handleRender and handleUpdate check for engine initialization
+- **UI integration**: Clear visual feedback with start screen, pause/resume, game-over overlay, and score display
+- **Proper hook integration**: Correctly uses useGameLoop (10 FPS) and useInputHandler for input buffering
+
+## 🚨 Critical Issue
+
+### Wraparound vs. Boundary Collision Mismatch
+
+**Problem**: The PR description explicitly states:
+> "Wraparound movement: Snake wraps around grid edges"
+
+However, the implementation causes the **game to end when hitting boundaries**:
+
+```typescript
+private isBoundaryCollision(pos: Position): boolean {
+  return pos.x < 0 || pos.x >= this.gridWidth || pos.y < 0 || pos.y >= this.gridHeight;
+}
+```
+
+The update logic treats boundary hits as game-over conditions:
+```typescript
+if (this.isCollision(newHead) || this.isBoundaryCollision(newHead)) {
+  this.gameState = 'gameOver';
+  return;
+}
+```
+
+The tests confirm this boundary behavior:
+```typescript
+it('should end game when hitting top boundary', () => {
+  engine.setDirection('up');
+  for (let i = 0; i < 11; i++) {
+    engine.update();
+  }
+  expect(engine.isGameOver()).toBe(true);  // Expects game over, not wraparound
+});
+```
+
+**Impact**: This is a significant behavioral difference. Wraparound movement (snake reappears on opposite side) is fundamentally different from boundary collision (game ends). The implementation doesn't match the stated feature set.
+
+**Clarification needed**: 
+- Was wraparound actually required by issue #3, or was this a misinterpretation in the PR description?
+- The issue itself has no description, only the title "Build game engine with state and fixed tick-rate loop"
+- Both behaviors are valid Snake variants, but the mismatch between spec and implementation must be resolved
+
+## Minor Observations
+
+### Test Coverage Notes
+- The collision detection test directly manipulates the internal snake array (`initialSnake.push(...)`), which works but relies on implementation details
+- Food spawning tests are good but could be more explicit about checking corner cases (e.g., food spawning on empty grid vs full grid)
+
+### Code Quality
+- No issues with the GameEngine implementation itself - logic is sound
+- Rendering code is clean and performant
+- Button state logic correctly handles start/pause/restart/new game transitions
+
+## Questions for Clarification
+1. Was "wraparound movement" the intended requirement, or should it be boundary collision?
+2. Is `useInputHandler` from a previous PR handling keyboard input correctly (not visible in diff but appears to be working)?
+
+## Verdict: Changes Required
+
+The wraparound/boundary collision discrepancy must be resolved before merge. Either:
+1. Update the implementation to use wraparound movement (modulo arithmetic instead of boundary checks)
+2. Update the PR description to reflect the actual boundary collision behavior
+3. Clarify what the original issue #3 specification actually required
+
+Once this is addressed, the implementation quality is solid and ready to merge.
+
+---
+
+**viovanov:**
+## Automated Code Review
+
+## Review Complete
+
+I've posted a detailed review to PR #9. The review is available at: https://github.com/asgardtech/snake10/pull/9#issuecomment-4443798516
+
+### Key Findings
+
+**Critical Issue**: The PR description claims "Wraparound movement: Snake wraps around grid edges," but the implementation actually causes the **game to end when hitting boundaries**. This is a significant behavioral mismatch that must be clarified and resolved.
+
+**Strengths**:
+- Clean architecture with good separation between GameEngine and UI
+- Comprehensive test suite (254 lines)
+- Solid game logic (collision detection, food mechanics, direction buffering)
+- Proper state management (idle → playing → gameOver)
+- Fixed 10 FPS tick-rate decoupled from 60 FPS rendering
+
+The implementation is technically sound overall, but the wraparound/boundary collision discrepancy needs to be addressed before approval.
+
+---
+
+**VERDICT: CHANGES_REQUESTED**
+
+Instructions:
+1. Read the review feedback above carefully.
+2. Address each piece of feedback by modifying the code.
+3. Commit your changes with a clear message referencing the feedback.
+4. Do NOT create a new PR -- your commits will be pushed to the existing branch.
+5. Do NOT include "Closes #" or "Fixes #" in commit messages — the issue lives on a separate project board.
